@@ -4,14 +4,33 @@
 // import axios from "axios";
 // import path from"path";
 
-const Express = require("express");
+const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const methodOverride = require("method-override");
 const multer = require("multer")
+const {
+    v4: uuid
+} = require("uuid");
+const dayjs = require("dayjs");
 
-const app = Express();
+
+
+
+const app = express();
 const log = console.log;
+
+const multerConfig = multer.diskStorage({
+    destination: function (res, file, cb) {
+        cb(null, "./bucket")
+    },
+    filename: function (res, file, cb) {
+        let idImage = uuid().split("-")[0];
+        let day = dayjs().format('DD-MM-YYYY');
+        cb(null, `${day}.${idImage}.${file.originalname}`);
+    },
+});
+
 let port = process.env.PORT || 3000;
 let users = [{
         email: "micorreo@mail.com",
@@ -31,24 +50,15 @@ let users = [{
 ];
 
 app.use(cors());
-app.use(Express.json());
-app.use(Express.urlencoded({
+app.use(express.json());
+app.use(express.urlencoded({
     extended: true
 }))
 app.use(methodOverride());
 
 
 
-const multerConfig = multer.diskStorage({
-    destination: function (res, file, cb) {
-        cb(null, "./bucket")
-    },
-    filename: function (res, file, cb) {
-        let idImage = uuid().split("-")[0];
-        let day = dayjs().format('DD-MM-YYYY');
-        cb(null, `${day}.${idImage}.${file.originalname}`);
-    },
-});
+
 
 const multerMiddle = multer({
     storage: multerConfig
@@ -107,7 +117,7 @@ app.get("/users/name", (req, res) => {
             }
         })
     })
-    res.send(resul); //get user por query
+    res.send(resul); //get user query
 })
 
 app.post("/users/name", (req, res) => {
@@ -125,7 +135,7 @@ app.post("/users/name", (req, res) => {
             res.send("este mail ya existe")
     });
     users.push(user);
-    res.send("usuario creado"); //get user por form
+    res.send("usuario creado"); //get user form
 });
 
 app.delete("/user/delete/:mail", (req, res) => {
@@ -158,8 +168,25 @@ app.post("/user/update", (req, res) => {
             users[i].password = pass
         }
     }
-    res.send(" usuario fue actualizado");
+    res.send("usuario actualizado");
 
+});
+
+app.post('/user/create', multerMiddle.single("imageFile"), (req, res) => {
+    const {
+        name,
+        email,
+        pass
+    } = req.body;
+    const foto = req.file;
+    users.push({
+        email,
+        name,
+        pass,
+        foto
+    });
+
+    res.send("usuario creado");
 });
 
 app.listen(port, () => {
