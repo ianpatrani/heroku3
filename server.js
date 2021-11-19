@@ -1,93 +1,167 @@
-const methodOverride = require("method-override");
+// import Express from "express";
+// import cors from "cors";
+// import methodOverride  from "method-override";
+// import axios from "axios";
+// import path from"path";
+
+const Express = require("express");
 const cors = require("cors");
-const express = require("express");
-const app = express();
+const path = require("path");
+const methodOverride = require("method-override");
+const multer = require("multer")
+
+const app = Express();
 const log = console.log;
-
-app.use(express.urlencoded({
-    extended: true
-}));
-app.use(express.json());
-
 let port = process.env.PORT || 3000;
-
 let users = [{
-        email: "primermail@mail.com",
-        name: "nombreuno",
-        pass: "miclave1"
+        email: "micorreo@mail.com",
+        name: "minombre1",
+        password: "00223355"
     },
     {
-        email: "segundomail@mail.com",
-        name: "nombredos",
-        pass: "miclave2"
+        email: "micorreo@mail.com",
+        name: "minombre2",
+        password: "00223355"
     },
     {
-        email: "tercermail@mail.com",
-        name: "nombretres",
-        pass: "miclave3"
+        email: "micorreo@mail.com",
+        name: "minombre3",
+        password: "00223355"
     }
 ];
 
 app.use(cors());
+app.use(Express.json());
+app.use(Express.urlencoded({
+    extended: true
+}))
 app.use(methodOverride());
 
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "/index.html"))
+
+
+const multerConfig = multer.diskStorage({
+    destination: function (res, file, cb) {
+        cb(null, "./bucket")
+    },
+    filename: function (res, file, cb) {
+        let idImage = uuid().split("-")[0];
+        let day = dayjs().format('DD-MM-YYYY');
+        cb(null, `${day}.${idImage}.${file.originalname}`);
+    },
 });
 
-app.get("/users", (req, res) => {
-    res.send(users);
-});
-
-app.get("/users/:email", (req, res) => {
-    let email = req.body.email;
-    res.send(`usuario ${email}`);
-});
-
-app.get("/users/:email", (req, res) => {
-    res.send(req.params.email);
-    res.send('usuario get emails');
-});
-
-app.post("/user/create", (req, res) => {
-    let email = req.body.email;
-    let name = req.body.name;
-    let clave = req.body.clave;
-    let user = {
-        "email": email,
-        "name": name,
-        "clave": clave
-    };
-    res.send(`usuario post`);
-});
-
-app.put('/users', (req, res) => {
-    const {
-        name,
-        email,
-        clave
-    } = req.body;
-    users.push({
-        name,
-        email,
-        clave
-    });
-    res.send('usuario put');
-});
-
-app.delete("/users/delete/:name", (req, res) => {
-    users = users.filter(user => user !== req.params.name);
-    res.send('usuario delete eliminado');
-});
-
-app.delete("/user/delete",(req,res)=>{
-    let mail= req.query.mail;
-    mail.forEach(para=>{   
-        users= users.filter((elemento)=>elemento.email!=para) 
-    })
-    res.send("usuarios eliminado")
+const multerMiddle = multer({
+    storage: multerConfig
 })
 
-app.listen(3000, () => {
-    log('start server');
+app.post("/registro/usuario", multerMiddle.single("imgFile"), (req, res) => {
+
+    if (req.file) {
+        res.send("imagen guardada");
+    } else {
+        res.send("error al cargar la imagen posiblemente no fue recibida");
+    }
+
+})
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "/views/index.html"))
+})
+
+app.get("/users", (req, res) => {
+    res.send(users)
+})
+
+app.get("/user/:mail", (req, res) => {
+    let mail = req.params.mail;
+    users.forEach(user => {
+        if (user.email == mail) {
+            res.send(user)
+        }
+    });
+    res.send("usuario no encontrado");
+});
+
+app.get("/usersEmail/:email", (req, res) => {
+    let email = req.params.email;
+    let arrayEmail = email.split(",");
+    let response = [];
+
+    arrayEmail.forEach((email) => {
+        users.forEach((user) => {
+            if (user.email == email) {
+                response.push(user)
+            }
+        })
+    })
+    res.send(response);
+})
+
+app.get("/users/name", (req, res) => {
+    let arrayNombre = req.query.nombre;
+    let resul = [];
+    arrayNombre.forEach((nombre) => {
+        users.forEach((element) => {
+            if (nombre == element.name) {
+                resul.push(element)
+            }
+        })
+    })
+    res.send(resul); //get user por query
+})
+
+app.post("/users/name", (req, res) => {
+    let email = req.body.email;
+    let nombre = req.body.nombre;
+    let pass = req.body.pass;
+
+    let user = {
+        "email": email,
+        "name": nombre,
+        "password": pass
+    };
+    users.forEach((element) => {
+        if (user.email == element.email)
+            res.send("este mail ya existe")
+    });
+    users.push(user);
+    res.send("usuario creado"); //get user por form
+});
+
+app.delete("/user/delete/:mail", (req, res) => {
+    let mail = req.params.mail;
+    users = users.filter((elemento) => elemento.email != mail)
+    res.send("usuario eliminado");
+});
+
+app.delete("/user/delete", (req, res) => {
+    let mail = req.query.mail;
+    mail.forEach(para => {
+        users = users.filter((elemento) => elemento.email != para)
+    });
+    res.send("usuarios eliminado");
+});
+
+app.get("/update", (req, res) => {
+
+    res.sendFile(path.join(__dirname, "/views/update.html"));
+});
+
+app.post("/user/update", (req, res) => {
+    let email = req.body.email;
+    let nombre = req.body.nombre;
+    let pass = req.body.pass;
+    let leng = users.length
+    for (let i = 0; i < leng; i++) {
+        if (users[i].email == email) {
+            users[i].name = nombre;
+            users[i].password = pass
+        }
+    }
+    res.send(" usuario fue actualizado");
+
+});
+
+app.listen(port, () => {
+    log(" start server ");
 });
