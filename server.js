@@ -91,7 +91,7 @@ app.get("/user/:mail", (req, res) => {
     });
     res.send("usuario no encontrado");
 });
-
+//get params todos los mails
 app.get("/usersEmail/:email", (req, res) => {
     let email = req.params.email;
     let arrayEmail = email.split(",");
